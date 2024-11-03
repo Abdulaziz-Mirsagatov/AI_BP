@@ -164,5 +164,6 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     # get the error fraction of the untrained network on the test set
     error_fraction_untrained = get_metrics(
         output_untrained_test_set, test_set_labels)
-    print(
-        f"Error fraction of untrained network on test set: {error_fraction_untrained}")
+    # write the error fraction to a file
+    with open("output/error_fraction_untrained_test_set.txt", "w") as f:
+        f.write(str(error_fraction_untrained))
