@@ -128,6 +128,22 @@ def get_metrics(output, labels):
     return error_fraction
 
 
+def feed_forward(inputs, weights, layers):
+    outputs = []
+    for input in inputs:
+        # convert the input to a list of floats and add a bias input of 1
+        points = [1] + [float(point) for point in input.split("\t")]
+        for l in range(len(layers)):
+            output = []
+            for n in range(layers[l]):
+                weights_current = weights[l][n]
+                net_input = calculate_net_input(weights_current, points)
+                output.append(tanh(net_input))
+            points = output
+        outputs.append(output)
+    return outputs
+
+
 def simulate_back_propogation(layers, learning_rate, epochs):
     # includes the bias input
     num_inputs = 785
@@ -142,18 +158,8 @@ def simulate_back_propogation(layers, learning_rate, epochs):
         test_set_labels = [line.strip() for line in f2.readlines()]
 
     # get the output of the untrained network on the test set
-    output_untrained_test_set = []
-    for input in test_set:
-        # convert the input to a list of floats and add a bias input of 1
-        points = [1] + [float(point) for point in input.split("\t")]
-        for l in range(len(layers)):
-            output = []
-            for n in range(layers[l]):
-                weights = weights_untrained[l][n]
-                net_input = calculate_net_input(weights, points)
-                output.append(tanh(net_input))
-            points = output
-        output_untrained_test_set.append(output)
+    output_untrained_test_set = feed_forward(
+        test_set, weights_untrained, layers)
 
     # get the error fraction of the untrained network on the test set
     error_fraction_untrained = get_metrics(
