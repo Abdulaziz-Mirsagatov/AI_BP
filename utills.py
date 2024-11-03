@@ -1,4 +1,6 @@
 from random import seed, shuffle, randint, uniform
+import numpy as np
+from math import tanh
 
 
 def generate_data_sets(digits):
@@ -101,16 +103,60 @@ def generate_data_sets(digits):
 
 def initialize_weights(layers):
     weights = []
-    for i in range(len(layers)-1):
-        weights.append([uniform(-1, 1)
-                       for _ in range(layers[i] * layers[i+1])])
+    for num_neurons in layers[:-1]:
+        layer_weights = []
+        for _ in range(num_neurons):
+            layer_weights.append(
+                [uniform(-1, 1) for _ in range(num_neurons)])
+        weights.append(layer_weights)
     return weights
 
 
-# layers is a list, where each entry is the number of neurons in that layer
-def simulate_back_propogation(layers, learning_rate, epochs):
-    weights_untrained = initialize_weights(layers)
+def calculate_net_input(weights, inputs):
+    return np.dot(weights, inputs)
 
+
+def get_metrics(output, labels):
+    correct_predictions = 0
+    for i in range(len(output)):
+        prediction = output[i].index(max(output[i]))
+        true = int(labels[i].strip())
+        if prediction == true:
+            correct_predictions += 1
+    accuracy = correct_predictions / len(output)
+    error_fraction = 1 - accuracy
+    return error_fraction
+
+
+def simulate_back_propogation(layers, learning_rate, epochs):
+    # includes the bias input
+    num_inputs = 785
+
+    weights_untrained = initialize_weights([num_inputs] + layers)
+
+    # read in the test set and its labels
     test_set = []
-    with open("output/test_set.txt") as f:
+    test_set_labels = []
+    with open("output/test_set.txt") as f, open("output/test_set_labels.txt") as f2:
         test_set = [line.strip() for line in f.readlines()]
+        test_set_labels = [line.strip() for line in f2.readlines()]
+
+    # get the output of the untrained network on the test set
+    output_untrained_test_set = []
+    for input in test_set:
+        # convert the input to a list of floats and add a bias input of 1
+        points = [1] + [float(point) for point in input.split("\t")]
+        for l in range(len(layers)):
+            output = []
+            for n in range(layers[l]):
+                weights = weights_untrained[l][n]
+                net_input = calculate_net_input(weights, points)
+                output.append(tanh(net_input))
+            points = output
+        output_untrained_test_set.append(output)
+
+    # get the error fraction of the untrained network on the test set
+    error_fraction_untrained = get_metrics(
+        output_untrained_test_set, test_set_labels)
+    print(
+        f"Error fraction of untrained network on test set: {error_fraction_untrained}")
