@@ -103,17 +103,21 @@ def generate_data_sets(digits):
 
 def initialize_weights(layers):
     weights = []
-    for num_neurons in layers[:-1]:
+    for l in range(len(layers) - 1):
         layer_weights = []
-        for _ in range(num_neurons):
+        for _ in range(layers[l + 1]):
             layer_weights.append(
-                [uniform(-1, 1) for _ in range(num_neurons)])
+                [uniform(-1, 1) for _ in range(layers[l] + 1)])  # add 1 for the bias input
         weights.append(layer_weights)
     return weights
 
 
 def calculate_net_input(weights, inputs):
     return np.dot(weights, inputs)
+
+
+def activation_function(net_input):
+    return tanh(net_input)
 
 
 def get_metrics(output, labels):
@@ -130,24 +134,22 @@ def get_metrics(output, labels):
 
 def feed_forward(inputs, weights, layers):
     outputs = []
-    for input in inputs:
-        # convert the input to a list of floats and add a bias input of 1
-        points = [1] + [float(point) for point in input.split("\t")]
+    for inp in inputs:
+        points = [float(point) for point in inp.split("\t")]
         for l in range(len(layers)):
             output = []
             for n in range(layers[l]):
                 weights_current = weights[l][n]
-                net_input = calculate_net_input(weights_current, points)
-                output.append(tanh(net_input))
+                net_input = calculate_net_input(
+                    weights_current, [1] + points)  # add a bias input of 1
+                output.append(activation_function(net_input))
             points = output
-        outputs.append(output)
+        outputs.append(points)
     return outputs
 
 
 def simulate_back_propogation(layers, learning_rate, epochs):
-    # includes the bias input
-    num_inputs = 785
-
+    num_inputs = 784
     weights_untrained = initialize_weights([num_inputs] + layers)
 
     # read in the test set and its labels
@@ -162,8 +164,37 @@ def simulate_back_propogation(layers, learning_rate, epochs):
         test_set, weights_untrained, layers)
 
     # get the error fraction of the untrained network on the test set
-    error_fraction_untrained = get_metrics(
+    error_fraction_untrained_test = get_metrics(
         output_untrained_test_set, test_set_labels)
     # write the error fraction to a file
     with open("output/error_fraction_untrained_test_set.txt", "w") as f:
-        f.write(str(error_fraction_untrained))
+        f.write(str(error_fraction_untrained_test))
+
+    # read in the training set and its labels
+    training_set = []
+    training_set_labels = []
+    with open("output/training_set.txt") as f, open("output/training_set_labels.txt") as f2:
+        training_set = [line.strip() for line in f.readlines()]
+        training_set_labels = [line.strip() for line in f2.readlines()]
+
+    # train the network
+    # for epoch in range(epochs):
+    #     outputs = []
+    #     for i in range(len(training_set)):
+    #         inp = training_set[i]
+    #         # convert the input to a list of floats and add a bias input of 1
+    #         points = [1] + [float(point)
+    #                         for point in inp.split("\t")]
+    #         # calculate the output of the network
+    #         for l in range(len(layers)):
+    #             output = []
+    #             for n in range(layers[l]):
+    #                 weights_current = weights_untrained[l][n]
+    #                 net_input = calculate_net_input(weights_current, points)
+    #                 output.append(activation_function(net_input))
+    #             points = output
+    #         outputs.append(points)
+
+    #         # back propogate
+    #         deltas = []
+        # calculate the delta of the output layer
