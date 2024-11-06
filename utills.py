@@ -120,6 +120,10 @@ def activation_function(net_input):
     return tanh(net_input)
 
 
+def activation_function_derivative(net_input):
+    return 1 - tanh(net_input) ** 2
+
+
 def get_metrics(output, labels):
     correct_predictions = 0
     for i in range(len(output)):
@@ -177,24 +181,76 @@ def simulate_back_propogation(layers, learning_rate, epochs):
         training_set = [line.strip() for line in f.readlines()]
         training_set_labels = [line.strip() for line in f2.readlines()]
 
+    # define operating parameters
+    L = -0.75
+    H = 0.75
     # train the network
-    # for epoch in range(epochs):
-    #     outputs = []
-    #     for i in range(len(training_set)):
-    #         inp = training_set[i]
-    #         # convert the input to a list of floats and add a bias input of 1
-    #         points = [1] + [float(point)
-    #                         for point in inp.split("\t")]
-    #         # calculate the output of the network
-    #         for l in range(len(layers)):
-    #             output = []
-    #             for n in range(layers[l]):
-    #                 weights_current = weights_untrained[l][n]
-    #                 net_input = calculate_net_input(weights_current, points)
-    #                 output.append(activation_function(net_input))
-    #             points = output
-    #         outputs.append(points)
+    print("Training the network...")
+    weights_trained = np.array(weights_untrained.copy(), dtype=object)
+    error_fractions = []
+    for epoch in range(epochs):
+        print("Epoch", epoch + 1)
+        network_outputs = []
+        for i in range(len(training_set)):
+            inp = training_set[i]
+            # convert the input to a list of floats and add a bias input of 1
+            points = [float(point)
+                      for point in inp.split("\t")]
+            derivatives = []
+            outputs = []
+            # calculate the output of the network
+            for l in range(len(layers)):
+                output_layer = []
+                derivatives_layer = []
+                for n in range(layers[l]):
+                    weights_current = weights_trained[l][n]
+                    net_input = calculate_net_input(
+                        weights_current, [1] + points)  # add a bias input of 1
+                    output_layer.append(activation_function(net_input))
+                    derivatives_layer.append(
+                        activation_function_derivative(net_input))
+                points = output_layer
+                outputs.append(output_layer)
+                derivatives.append(derivatives_layer)
+            # since points after the loop is the output of the output layer, it is now the output of the network, add it to the outputs list
+            network_outputs.append(points)
 
-    #         # back propogate
-    #         deltas = []
-        # calculate the delta of the output layer
+            # back propogate
+            deltas = np.zeros(len(layers), dtype=object)
+            output = np.array(
+                [1 if value >= H else -1 if value <= L else value for value in points])
+            label = np.array(
+                [1 if i == int(training_set_labels[i]) else -1 for i in range(len(output))])
+            # calculate the delta for the output layer
+            deltas[-1] = np.multiply(
+                derivatives[-1], np.subtract(label, output))
+            # calculate the deltas for the hidden layers
+            for l in range(len(layers) - 2, -1, -1):
+                error_terms = np.zeros(layers[l], dtype=object)
+                for n in range(1, layers[l]+1):  # skip the bias weight
+                    error_term = 0
+                    for j in range(layers[l+1]):
+                        error_term += weights_trained[l +
+                                                      1][j][n] * deltas[l+1][j]
+                    error_terms[n-1] = error_term
+                deltas[l] = np.multiply(derivatives[l], error_terms)
+
+            # update the weights
+            for l in range(len(layers)):
+                for n in range(layers[l]):
+                    for w in range(len(weights_trained[l][n])):
+                        weights_trained[l][n][w] += learning_rate * \
+                            deltas[l][n] * outputs[l][n]
+
+        # get the error fraction of the network in training on the training set
+        error_fraction_training = get_metrics(
+            network_outputs, training_set_labels)
+        print("Error fraction on training set on epoch:",
+              epoch, error_fraction_training)
+        error_fractions.append(error_fraction_training)
+
+    # write the error fractions to a file
+    with open("output/error_fractions_training.txt", "w") as f:
+        for error in error_fractions:
+            f.write(str(error) + "\n")
+    print("Training complete.")
