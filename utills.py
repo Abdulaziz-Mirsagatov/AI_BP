@@ -156,6 +156,12 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     num_inputs = 784
     weights_untrained = initialize_weights([num_inputs] + layers)
 
+    # write the untrained weights to a file
+    with open("output/weights_untrained.txt", "w") as f:
+        for layer in weights_untrained:
+            for n in range(len(layer)):
+                f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
+
     # read in the test set and its labels
     test_set = []
     test_set_labels = []
@@ -193,7 +199,7 @@ def simulate_back_propogation(layers, learning_rate, epochs):
         network_outputs = []
         for i in range(len(training_set)):
             inp = training_set[i]
-            # convert the input to a list of floats and add a bias input of 1
+            # convert the input to a list of floats
             points = [float(point)
                       for point in inp.split("\t")]
             derivatives = []
@@ -218,16 +224,18 @@ def simulate_back_propogation(layers, learning_rate, epochs):
             # back propogate
             deltas = np.zeros(len(layers), dtype=object)
             output = np.array(
-                [1 if value >= H else -1 if value <= L else value for value in points])
-            label = np.array(
-                [1 if i == int(training_set_labels[i]) else -1 for i in range(len(output))])
+                [1 if points[j] >= H and j == int(training_set_labels[i]) else -1 if points[j] <= L and int(training_set_labels[i]) != j else points[j] for j in range(len(points))])
+            label = np.full(len(output), -1)  # Initialize label array with -1
+            # Set the index from training_set_labels[i] to 1
+            label[int(training_set_labels[i])] = 1
             # calculate the delta for the output layer
             deltas[-1] = np.multiply(
                 derivatives[-1], np.subtract(label, output))
             # calculate the deltas for the hidden layers
             for l in range(len(layers) - 2, -1, -1):
                 error_terms = np.zeros(layers[l], dtype=object)
-                for n in range(1, layers[l]+1):  # skip the bias weight
+                # skip the bias weight
+                for n in range(1, layers[l]+1):
                     error_term = 0
                     for j in range(layers[l+1]):
                         error_term += weights_trained[l +
@@ -236,17 +244,20 @@ def simulate_back_propogation(layers, learning_rate, epochs):
                 deltas[l] = np.multiply(derivatives[l], error_terms)
 
             # update the weights
+            inputs = [float(point) for point in inp.split("\t")] + outputs[:-1]
             for l in range(len(layers)):
                 for n in range(layers[l]):
-                    for w in range(len(weights_trained[l][n])):
+                    # update the bias weight
+                    weights_trained[l][n][0] += learning_rate * deltas[l][n]
+                    # skip the bias weight
+                    for w in range(1, len(weights_trained[l][n])):
                         weights_trained[l][n][w] += learning_rate * \
-                            deltas[l][n] * outputs[l][n]
+                            deltas[l][n] * float(inputs[w-1])
 
         # get the error fraction of the network in training on the training set
         error_fraction_training = get_metrics(
             network_outputs, training_set_labels)
-        print("Error fraction on training set on epoch:",
-              epoch, error_fraction_training)
+        print("Error fraction on training set:", error_fraction_training)
         error_fractions.append(error_fraction_training)
 
     # write the error fractions to a file
@@ -254,3 +265,9 @@ def simulate_back_propogation(layers, learning_rate, epochs):
         for error in error_fractions:
             f.write(str(error) + "\n")
     print("Training complete.")
+
+    # write the trained weights to a file
+    with open("output/weights_trained.txt", "w") as f:
+        for layer in weights_trained:
+            for n in range(len(layer)):
+                f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
