@@ -1,4 +1,4 @@
-from random import seed, shuffle, randint, uniform
+from random import seed, shuffle, randint, uniform, sample
 import numpy as np
 from math import tanh
 
@@ -152,6 +152,33 @@ def feed_forward(inputs, weights, layers):
     return outputs
 
 
+def get_random_subset(data, labels, class_sizes):
+    # Shuffle data and labels together
+    data_labels = list(zip(data, labels))
+    shuffle(data_labels)
+    data, labels = zip(*data_labels)
+
+    # Initialize containers for the subset
+    subset = []
+    subset_labels = []
+
+    # Initialize a counter for each class
+    class_counts = {label: 0 for label in class_sizes.keys()}
+
+    i = 0
+    # Loop through data until we gather enough samples for each class
+    while any(class_counts[label] < class_sizes[label] for label in class_sizes.keys()) and i < len(data):
+        current_label = labels[i]
+        # Check if the current label is in the class_sizes dictionary and if we need more samples for this class
+        if current_label in class_sizes and class_counts[current_label] < class_sizes[current_label]:
+            subset.append(data[i])
+            subset_labels.append(current_label)
+            class_counts[current_label] += 1
+        i += 1
+
+    return subset, subset_labels
+
+
 def simulate_back_propogation(layers, learning_rate, epochs):
     num_inputs = 784
     weights_untrained = initialize_weights([num_inputs] + layers)
@@ -197,8 +224,22 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     for epoch in range(epochs):
         print("Epoch", epoch + 1)
         network_outputs = []
-        for i in range(len(training_set)):
-            inp = training_set[i]
+        # get a random subset of the training set
+        training_subset, training_subset_labels = get_random_subset(
+            training_set, training_set_labels, {
+                "0": 40,
+                "1": 40,
+                "2": 40,
+                "3": 40,
+                "4": 40,
+                "5": 40,
+                "6": 40,
+                "7": 40,
+                "8": 40,
+                "9": 40
+            })
+        for i in range(len(training_subset)):
+            inp = training_subset[i]
             # convert the input to a list of floats
             points = [float(point)
                       for point in inp.split("\t")]
@@ -224,10 +265,10 @@ def simulate_back_propogation(layers, learning_rate, epochs):
             # back propogate
             deltas = np.zeros(len(layers), dtype=object)
             output = np.array(
-                [1 if points[j] >= H and j == int(training_set_labels[i]) else -1 if points[j] <= L and int(training_set_labels[i]) != j else points[j] for j in range(len(points))])
+                [1 if points[j] >= H and j == int(training_subset_labels[i]) else -1 if points[j] <= L and int(training_subset_labels[i]) != j else points[j] for j in range(len(points))])
             label = np.full(len(output), -1)  # Initialize label array with -1
-            # Set the index from training_set_labels[i] to 1
-            label[int(training_set_labels[i])] = 1
+            # Set the index from training_subset_labels[i] to 1
+            label[int(training_subset_labels[i])] = 1
             # calculate the delta for the output layer
             deltas[-1] = np.multiply(
                 derivatives[-1], np.subtract(label, output))
@@ -256,7 +297,7 @@ def simulate_back_propogation(layers, learning_rate, epochs):
 
         # get the error fraction of the network in training on the training set
         error_fraction_training = get_metrics(
-            network_outputs, training_set_labels)
+            network_outputs, training_subset_labels)
         print("Error fraction on training set:", error_fraction_training)
         error_fractions.append(error_fraction_training)
 
