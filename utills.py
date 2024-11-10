@@ -197,9 +197,9 @@ def simulate_back_propogation(layers, learning_rate, epochs):
         test_set_labels = [line.strip() for line in f2.readlines()]
 
     # get the output of the untrained network on the test set
+    print("Feed forwarding the untrained network on the test set...")
     output_untrained_test_set = feed_forward(
         test_set, weights_untrained, layers)
-
     # get the error fraction of the untrained network on the test set
     error_fraction_untrained_test = get_metrics(
         output_untrained_test_set, test_set_labels)
@@ -214,6 +214,17 @@ def simulate_back_propogation(layers, learning_rate, epochs):
         training_set = [line.strip() for line in f.readlines()]
         training_set_labels = [line.strip() for line in f2.readlines()]
 
+    # get the output of the untrained network on the training set
+    print("Feed forwarding the untrained network on the training set...")
+    output_untrained_training_set = feed_forward(
+        training_set, weights_untrained, layers)
+    # get the error fraction of the untrained network on the training set
+    error_fraction_untrained_training = get_metrics(
+        output_untrained_training_set, training_set_labels)
+    # write the error fraction to a file
+    with open("output/error_fraction_untrained_training_set.txt", "w") as f:
+        f.write(str(error_fraction_untrained_training))
+
     # define operating parameters
     L = -0.75
     H = 0.75
@@ -221,6 +232,7 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     print("Training the network...")
     weights_trained = np.array(weights_untrained.copy(), dtype=object)
     error_fractions = []
+    error_fractions_test_set = []
     for epoch in range(epochs):
         print("Epoch", epoch + 1)
         network_outputs = []
@@ -301,14 +313,48 @@ def simulate_back_propogation(layers, learning_rate, epochs):
         print("Error fraction on training set:", error_fraction_training)
         error_fractions.append(error_fraction_training)
 
+        # get the error fraction of the network on the test set every 10 epochs
+        if (epoch + 1) % 10 == 0:
+            output_test_set = feed_forward(
+                test_set, weights_trained, layers)
+            error_fraction_test = get_metrics(output_test_set, test_set_labels)
+            error_fractions_test_set.append(error_fraction_test)
+    print("Training complete.")
+
     # write the error fractions to a file
     with open("output/error_fractions_training.txt", "w") as f:
         for error in error_fractions:
             f.write(str(error) + "\n")
-    print("Training complete.")
+
+    # write the error fractions on the test set to a file
+    with open("output/error_fractions_training_test_set.txt", "w") as f:
+        for error in error_fractions_test_set:
+            f.write(str(error) + "\n")
 
     # write the trained weights to a file
     with open("output/weights_trained.txt", "w") as f:
         for layer in weights_trained:
             for n in range(len(layer)):
                 f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
+
+    # get the output of the trained network on the test set
+    print("Feed forwarding the trained network on the test set...")
+    output_trained_test_set = feed_forward(
+        test_set, weights_trained, layers)
+    # get the error fraction of the trained network on the test set
+    error_fraction_trained_test = get_metrics(
+        output_trained_test_set, test_set_labels)
+    # write the error fraction to a file
+    with open("output/error_fraction_trained_test_set.txt", "w") as f:
+        f.write(str(error_fraction_trained_test))
+
+    # get the output of the trained network on the training set
+    print("Feed forwarding the trained network on the training set...")
+    output_trained_training_set = feed_forward(
+        training_set, weights_trained, layers)
+    # get the error fraction of the trained network on the training set
+    error_fraction_trained_training = get_metrics(
+        output_trained_training_set, training_set_labels)
+    # write the error fraction to a file
+    with open("output/error_fraction_trained_training_set.txt", "w") as f:
+        f.write(str(error_fraction_trained_training))
