@@ -184,7 +184,7 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     weights_untrained = initialize_weights([num_inputs] + layers)
 
     # write the untrained weights to a file
-    with open("output/weights_untrained.txt", "w") as f:
+    with open("output/problem2/weights_untrained.txt", "w") as f:
         for layer in weights_untrained:
             for n in range(len(layer)):
                 f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
@@ -204,7 +204,7 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     error_fraction_untrained_test = get_metrics(
         output_untrained_test_set, test_set_labels)
     # write the error fraction to a file
-    with open("output/error_fraction_untrained_test_set.txt", "w") as f:
+    with open("output/problem1/error_fraction_untrained_test_set.txt", "w") as f:
         f.write(str(error_fraction_untrained_test))
 
     # read in the training set and its labels
@@ -222,7 +222,7 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     error_fraction_untrained_training = get_metrics(
         output_untrained_training_set, training_set_labels)
     # write the error fraction to a file
-    with open("output/error_fraction_untrained_training_set.txt", "w") as f:
+    with open("output/problem1/error_fraction_untrained_training_set.txt", "w") as f:
         f.write(str(error_fraction_untrained_training))
 
     # define operating parameters
@@ -322,17 +322,17 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     print("Training complete.")
 
     # write the error fractions to a file
-    with open("output/error_fractions_training.txt", "w") as f:
+    with open("output/problem1/error_fractions_training.txt", "w") as f:
         for error in error_fractions:
             f.write(str(error) + "\n")
 
     # write the error fractions on the test set to a file
-    with open("output/error_fractions_training_test_set.txt", "w") as f:
+    with open("output/problem1/error_fractions_training_test_set.txt", "w") as f:
         for error in error_fractions_test_set:
             f.write(str(error) + "\n")
 
     # write the trained weights to a file
-    with open("output/weights_trained.txt", "w") as f:
+    with open("output/problem1/weights_trained.txt", "w") as f:
         for layer in weights_trained:
             for n in range(len(layer)):
                 f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
@@ -345,7 +345,7 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     error_fraction_trained_test = get_metrics(
         output_trained_test_set, test_set_labels)
     # write the error fraction to a file
-    with open("output/error_fraction_trained_test_set.txt", "w") as f:
+    with open("output/problem1/error_fraction_trained_test_set.txt", "w") as f:
         f.write(str(error_fraction_trained_test))
 
     # get the output of the trained network on the training set
@@ -356,5 +356,152 @@ def simulate_back_propogation(layers, learning_rate, epochs):
     error_fraction_trained_training = get_metrics(
         output_trained_training_set, training_set_labels)
     # write the error fraction to a file
-    with open("output/error_fraction_trained_training_set.txt", "w") as f:
+    with open("output/problem1/error_fraction_trained_training_set.txt", "w") as f:
         f.write(str(error_fraction_trained_training))
+
+
+def simulate_reconstruction_learning(layers, learning_rate, epochs):
+    num_inputs = 784
+    weights_untrained = initialize_weights([num_inputs] + layers)
+
+    # write the untrained weights to a file
+    with open("output/problem2/weights_untrained.txt", "w") as f:
+        for layer in weights_untrained:
+            for n in range(len(layer)):
+                f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
+
+    # read in the test set and its labels
+    test_set = []
+    with open("output/test_set.txt") as f1, open("output/test_set_labels.txt") as f2:
+        test_set = [line.strip() for line in f1.readlines()]
+        test_set_labels = [line.strip() for line in f2.readlines()]
+
+    # read in the training set and its labels
+    training_set = []
+    with open("output/training_set.txt") as f1, open("output/training_set_labels.txt") as f2:
+        training_set = [line.strip() for line in f1.readlines()]
+        training_set_labels = [line.strip() for line in f2.readlines()]
+
+    # train the network
+    print("Training the network...")
+    weights_trained = np.array(weights_untrained.copy(), dtype=object)
+    mean_reconstruction_errors = []
+    for epoch in range(epochs):
+        print("Epoch", epoch + 1)
+        network_outputs = []
+        # get a random subset of the training set
+        training_subset, _ = get_random_subset(
+            training_set, training_set_labels, {
+                "0": 40,
+                "1": 40,
+                "2": 40,
+                "3": 40,
+                "4": 40,
+                "5": 40,
+                "6": 40,
+                "7": 40,
+                "8": 40,
+                "9": 40
+            })
+        for i in range(len(training_subset)):
+            inp = training_subset[i]
+            # convert the input to a list of floats
+            points = [float(point)
+                      for point in inp.split("\t")]
+            derivatives = []
+            outputs = []
+            # calculate the output of the network
+            for l in range(len(layers)):
+                output_layer = []
+                derivatives_layer = []
+                for n in range(layers[l]):
+                    weights_current = weights_trained[l][n]
+                    net_input = calculate_net_input(
+                        weights_current, [1] + points)  # add a bias input of 1
+                    output_layer.append(activation_function(net_input))
+                    derivatives_layer.append(
+                        activation_function_derivative(net_input))
+                points = output_layer
+                outputs.append(output_layer)
+                derivatives.append(derivatives_layer)
+            # since points after the loop is the output of the output layer, it is now the output of the network, add it to the outputs list
+            network_outputs.append(points)
+
+            # back propogate
+            deltas = np.zeros(len(layers), dtype=object)
+            output = np.array(points)
+            label = np.array([float(point) for point in inp.split("\t")])
+            # calculate the delta for the output layer
+            deltas[-1] = np.multiply(
+                derivatives[-1], np.subtract(label, output))
+            # calculate the deltas for the hidden layers
+            for l in range(len(layers) - 2, -1, -1):
+                error_terms = np.zeros(layers[l], dtype=object)
+                # skip the bias weight
+                for n in range(1, layers[l]+1):
+                    error_term = 0
+                    for j in range(layers[l+1]):
+                        error_term += weights_trained[l +
+                                                      1][j][n] * deltas[l+1][j]
+                    error_terms[n-1] = error_term
+                deltas[l] = np.multiply(derivatives[l], error_terms)
+
+            # update the weights
+            inputs = [float(point) for point in inp.split("\t")] + outputs[:-1]
+            for l in range(len(layers)):
+                for n in range(layers[l]):
+                    # update the bias weight
+                    weights_trained[l][n][0] += learning_rate * deltas[l][n]
+                    # skip the bias weight
+                    for w in range(1, len(weights_trained[l][n])):
+                        weights_trained[l][n][w] += learning_rate * \
+                            deltas[l][n] * float(inputs[w-1])
+
+        # get the mean reconstruction error of the network on the training set
+        reconstruction_error = 0
+        for i in range(len(training_subset)):
+            output = network_outputs[i]
+            label = [float(point) for point in training_subset[i].split("\t")]
+            reconstruction_error += np.linalg.norm(
+                np.subtract(output[-1], label))
+        reconstruction_error /= len(training_subset)
+        print("Mean reconstruction error on training set:",
+              reconstruction_error)
+        mean_reconstruction_errors.append(reconstruction_error)
+    print("Training complete.")
+
+    # write the mean reconstruction errors to a file
+    with open("output/problem2/mean_reconstruction_errors_training.txt", "w") as f:
+        for error in mean_reconstruction_errors:
+            f.write(str(error) + "\n")
+
+    # write the trained weights to a file
+    with open("output/weights_trained.txt", "w") as f:
+        for layer in weights_trained:
+            for n in range(len(layer)):
+                f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
+
+    # get the output of the trained network on the test set
+    print("Feed forwarding the trained network on the test set...")
+    output_trained_test_set = feed_forward(
+        test_set, weights_trained, layers)
+    # write the output to a file
+    with open("output/problem2/output_trained_test_set.txt", "w") as f:
+        for output in output_trained_test_set:
+            f.write("\t".join([str(point) for point in output]) + "\n")
+    # get the mean reconstruction error of the trained network on the test set for each digit
+    reconstruction_errors = {str(i): 0 for i in range(10)}
+    digit_counts = {str(i): 0 for i in range(10)}
+    for i in range(len(test_set)):
+        output = output_trained_test_set[i]
+        label = test_set_labels[i]
+        digit = label
+        reconstruction_errors[digit] += np.linalg.norm(np.subtract(
+            output[-1], [float(point) for point in test_set[i].split("\t")]))
+        digit_counts[digit] += 1
+    for digit in reconstruction_errors.keys():
+        reconstruction_errors[digit] /= digit_counts[digit]
+    # write the reconstruction errors to a file
+    with open("output/problem2/reconstruction_errors_test_set.txt", "w") as f:
+        for digit in reconstruction_errors.keys():
+            f.write(digit + "\t" + str(reconstruction_errors[digit]) + "\n")
