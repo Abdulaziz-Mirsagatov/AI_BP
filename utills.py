@@ -392,16 +392,16 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
         # get a random subset of the training set
         training_subset, _ = get_random_subset(
             training_set, training_set_labels, {
-                "0": 40,
-                "1": 40,
-                "2": 40,
-                "3": 40,
-                "4": 40,
-                "5": 40,
-                "6": 40,
-                "7": 40,
-                "8": 40,
-                "9": 40
+                "0": 10,
+                "1": 10,
+                "2": 10,
+                "3": 10,
+                "4": 10,
+                "5": 10,
+                "6": 10,
+                "7": 10,
+                "8": 10,
+                "9": 10
             })
         for i in range(len(training_subset)):
             inp = training_subset[i]
@@ -489,6 +489,7 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
     with open("output/problem2/output_trained_test_set.txt", "w") as f:
         for output in output_trained_test_set:
             f.write("\t".join([str(point) for point in output]) + "\n")
+
     # get the mean reconstruction error of the trained network on the test set for each digit
     reconstruction_errors = {str(i): 0 for i in range(10)}
     digit_counts = {str(i): 0 for i in range(10)}
@@ -504,4 +505,22 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
     # write the reconstruction errors to a file
     with open("output/problem2/reconstruction_errors_test_set.txt", "w") as f:
         for digit in reconstruction_errors.keys():
-            f.write(digit + "\t" + str(reconstruction_errors[digit]) + "\n")
+            f.write(str(reconstruction_errors[digit]) + "\n")
+
+    # get the standard deviations of the reconstruction errors by calculating the reconstruction errors for 100 random samples of each digit
+    standard_deviations = {str(i): 0 for i in range(10)}
+    for digit in range(10):
+        # generate 100 random non-repeating digits
+        random_samples = sample(range(1000), 100)
+        for i in random_samples:
+            output = output_trained_test_set[i]
+            label = test_set_labels[i]
+            digit = label
+            standard_deviations[digit] += np.linalg.norm(np.subtract(
+                output[-1], [float(point) for point in test_set[i].split("\t")]))
+        for digit in standard_deviations.keys():
+            standard_deviations[digit] /= 100
+    # write the standard deviations to a file
+    with open("output/problem2/standard_deviations_test_set.txt", "w") as f:
+        for digit in standard_deviations.keys():
+            f.write(str(standard_deviations[digit]) + "\n")
