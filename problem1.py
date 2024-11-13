@@ -67,7 +67,7 @@ for i in range(10):
 
 ax.set_title("Confusion Matrix Training Set")
 fig.tight_layout()
-plt.savefig("output/confusion_matrix_training_set.png")
+plt.savefig("output/problem1/confusion_matrix_training_set.png")
 plt.show()
 
 # get the test set output and create the confusion matrix
@@ -101,7 +101,7 @@ for i in range(10):
 
 ax.set_title("Confusion Matrix Test Set")
 fig.tight_layout()
-plt.savefig("output/confusion_matrix_test_set.png")
+plt.savefig("output/problem1/confusion_matrix_test_set.png")
 plt.show()
 
 error_fractions_training = []
@@ -132,5 +132,5 @@ ax.set_ylabel("Error Fraction")
 ax.set_title("Error Fraction vs Epochs")
 ax.legend()
 
-plt.savefig("output/error_fractions_time_series.png")
+plt.savefig("output/problem1/error_fractions_time_series.png")
 plt.show()

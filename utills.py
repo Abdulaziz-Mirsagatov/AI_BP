@@ -1,6 +1,22 @@
 from random import seed, shuffle, randint, uniform, sample
 import numpy as np
 from math import tanh
+import matplotlib.pyplot as plt
+
+
+def visualize_data(arr):
+    # Reshape it into a 28x28 matrix
+    arr = np.array(arr)
+    pixel_matrix = arr.reshape((28, 28))
+
+    # Correct orientation: rotate 90 degrees clockwise and flip horizontally
+    pixel_matrix = np.rot90(pixel_matrix, k=-1)  # Rotate 90 degrees clockwise
+    pixel_matrix = np.fliplr(pixel_matrix)       # Flip horizontally
+
+    # Plot the 28x28 matrix
+    plt.imshow(pixel_matrix, cmap='gray')
+    plt.colorbar()
+    plt.show()
 
 
 def generate_data_sets(digits):
@@ -390,19 +406,20 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
         print("Epoch", epoch + 1)
         network_outputs = []
         # get a random subset of the training set
-        training_subset, _ = get_random_subset(
-            training_set, training_set_labels, {
-                "0": 10,
-                "1": 10,
-                "2": 10,
-                "3": 10,
-                "4": 10,
-                "5": 10,
-                "6": 10,
-                "7": 10,
-                "8": 10,
-                "9": 10
-            })
+        # training_subset, _ = get_random_subset(
+        #     training_set, training_set_labels, {
+        #         "0": 40,
+        #         "1": 40,
+        #         "2": 40,
+        #         "3": 40,
+        #         "4": 40,
+        #         "5": 40,
+        #         "6": 40,
+        #         "7": 40,
+        #         "8": 40,
+        #         "9": 40
+        #     })
+        training_subset = training_set.copy()
         for i in range(len(training_subset)):
             inp = training_subset[i]
             # convert the input to a list of floats
@@ -462,8 +479,8 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
         for i in range(len(training_subset)):
             output = network_outputs[i]
             label = [float(point) for point in training_subset[i].split("\t")]
-            reconstruction_error += np.linalg.norm(
-                np.subtract(output[-1], label))
+            reconstruction_error += np.sum(
+                np.square(np.subtract(output[-1], label))) / 2
         reconstruction_error /= len(training_subset)
         print("Mean reconstruction error on training set:",
               reconstruction_error)
@@ -476,7 +493,7 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
             f.write(str(error) + "\n")
 
     # write the trained weights to a file
-    with open("output/weights_trained.txt", "w") as f:
+    with open("output/problem2/weights_trained.txt", "w") as f:
         for layer in weights_trained:
             for n in range(len(layer)):
                 f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
@@ -490,37 +507,40 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
         for output in output_trained_test_set:
             f.write("\t".join([str(point) for point in output]) + "\n")
 
-    # get the mean reconstruction error of the trained network on the test set for each digit
-    reconstruction_errors = {str(i): 0 for i in range(10)}
-    digit_counts = {str(i): 0 for i in range(10)}
+    # get the mean reconstruction error of the trained network on the test set
+    reconstruction_errors = 0
     for i in range(len(test_set)):
         output = output_trained_test_set[i]
         label = test_set_labels[i]
         digit = label
-        reconstruction_errors[digit] += np.linalg.norm(np.subtract(
-            output[-1], [float(point) for point in test_set[i].split("\t")]))
-        digit_counts[digit] += 1
-    for digit in reconstruction_errors.keys():
-        reconstruction_errors[digit] /= digit_counts[digit]
-    # write the reconstruction errors to a file
-    with open("output/problem2/reconstruction_errors_test_set.txt", "w") as f:
-        for digit in reconstruction_errors.keys():
-            f.write(str(reconstruction_errors[digit]) + "\n")
+        reconstruction_errors += np.sum(
+            np.square(np.subtract(output[-1], [float(point) for point in test_set[i].split("\t")])))/2
+    reconstruction_errors /= len(test_set)
 
-    # get the standard deviations of the reconstruction errors by calculating the reconstruction errors for 100 random samples of each digit
+    # write the reconstruction errors to a file
+    with open("output/problem2/mean_reconstruction_error_test_set.txt", "w") as f:
+        f.write(str(reconstruction_errors) + "\n")
+
+    # calculate the mean reconstruction errors and standard deviations for each digit in the test set
+    mean_reconstruction_errors = {str(i): 0 for i in range(10)}
     standard_deviations = {str(i): 0 for i in range(10)}
     for digit in range(10):
-        # generate 100 random non-repeating digits
-        random_samples = sample(range(1000), 100)
-        for i in random_samples:
+        r = digit*100
+        for i in range(r, r+100):
             output = output_trained_test_set[i]
-            label = test_set_labels[i]
-            digit = label
-            standard_deviations[digit] += np.linalg.norm(np.subtract(
-                output[-1], [float(point) for point in test_set[i].split("\t")]))
-        for digit in standard_deviations.keys():
-            standard_deviations[digit] /= 100
+            mean_reconstruction_errors[str(digit)] += np.sum(
+                np.square(np.subtract(output[-1], [float(point) for point in test_set[i].split("\t")])))/2
+            standard_deviations[str(digit)] += np.sum(
+                np.square(np.subtract(output[-1], [float(point) for point in test_set[i].split("\t")])))/2
+        mean_reconstruction_errors[str(digit)] /= 100
+        standard_deviations[str(digit)] /= 100
+
+    # write the mean reconstruction errors to a file
+    with open("output/problem2/mean_reconstruction_errors_test.txt", "w") as f:
+        for i in range(10):
+            f.write(str(mean_reconstruction_errors[str(i)]) + "\n")
+
     # write the standard deviations to a file
-    with open("output/problem2/standard_deviations_test_set.txt", "w") as f:
-        for digit in standard_deviations.keys():
-            f.write(str(standard_deviations[digit]) + "\n")
+    with open("output/problem2/standard_deviations_test.txt", "w") as f:
+        for i in range(10):
+            f.write(str(standard_deviations[str(i)]) + "\n")
