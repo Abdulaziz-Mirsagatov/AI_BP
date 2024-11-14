@@ -1,6 +1,6 @@
 from random import seed, shuffle, randint, uniform, sample
 import numpy as np
-from math import tanh
+from math import exp
 import matplotlib.pyplot as plt
 
 
@@ -133,11 +133,11 @@ def calculate_net_input(weights, inputs):
 
 
 def activation_function(net_input):
-    return tanh(net_input)
+    return 1 / (1 + exp(-net_input))
 
 
 def activation_function_derivative(net_input):
-    return 1 - tanh(net_input) ** 2
+    return activation_function(net_input) * (1 - activation_function(net_input))
 
 
 def get_metrics(output, labels):
@@ -406,20 +406,20 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
         print("Epoch", epoch + 1)
         network_outputs = []
         # get a random subset of the training set
-        # training_subset, _ = get_random_subset(
-        #     training_set, training_set_labels, {
-        #         "0": 40,
-        #         "1": 40,
-        #         "2": 40,
-        #         "3": 40,
-        #         "4": 40,
-        #         "5": 40,
-        #         "6": 40,
-        #         "7": 40,
-        #         "8": 40,
-        #         "9": 40
-        #     })
-        training_subset = training_set.copy()
+        training_subset, _ = get_random_subset(
+            training_set, training_set_labels, {
+                "0": 40,
+                "1": 40,
+                "2": 40,
+                "3": 40,
+                "4": 40,
+                "5": 40,
+                "6": 40,
+                "7": 40,
+                "8": 40,
+                "9": 40
+            })
+        # training_subset = training_set.copy()
         for i in range(len(training_subset)):
             inp = training_subset[i]
             # convert the input to a list of floats
@@ -536,11 +536,11 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
         standard_deviations[str(digit)] /= 100
 
     # write the mean reconstruction errors to a file
-    with open("output/problem2/mean_reconstruction_errors_test.txt", "w") as f:
+    with open("output/problem2/mean_reconstruction_errors_test_set.txt", "w") as f:
         for i in range(10):
             f.write(str(mean_reconstruction_errors[str(i)]) + "\n")
 
     # write the standard deviations to a file
-    with open("output/problem2/standard_deviations_test.txt", "w") as f:
+    with open("output/problem2/standard_deviations_test_set.txt", "w") as f:
         for i in range(10):
             f.write(str(standard_deviations[str(i)]) + "\n")
