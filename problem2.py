@@ -19,12 +19,27 @@ layers = [125, 784]
 mean_reconstruction_errors_training = []
 mean_reconstruction_errors_test = []
 standard_deviations_test = []
-with open("output/problem2/mean_reconstruction_errors_training.txt") as f1, open("output/problem2/mean_reconstruction_errors_test_set.txt") as f2, open("output/problem2/standard_deviations_test_set.txt") as f3:
+mean_reconstruction_error_training = 0
+mean_reconstruction_error_test = 0
+with open("output/problem2/mean_reconstruction_errors_training_set.txt") as f1, open("output/problem2/mean_reconstruction_errors_test_set.txt") as f2, open("output/problem2/standard_deviations_test_set.txt") as f3, open("output/problem2/mean_reconstruction_error_training_set.txt") as f4, open("output/problem2/mean_reconstruction_error_test_set.txt") as f5:
     mean_reconstruction_errors_training = [
         float(err) for err in f1.readlines()]
     mean_reconstruction_errors_test = [float(err) for err in f2.readlines()]
     standard_deviations_test = [float(err) for err in f3.readlines()]
+    lines = f4.readlines()
+    mean_reconstruction_error_training = float(lines[0])
+    lines = f5.readlines()
+    mean_reconstruction_error_test = float(lines[0])
 
+# plot mean reconstruction errors for training and test set as bar chart
+fig, ax = plt.subplots()
+ax.bar(["Training Set", "Test Set"], [mean_reconstruction_error_training,
+                                      mean_reconstruction_error_test], color=["blue", "orange"])
+ax.set_xlabel("Data Set")
+ax.set_ylabel("Mean Reconstruction Error")
+ax.set_title("Mean Reconstruction Error for Training and Test Set")
+plt.savefig("output/problem2/mean_reconstruction_error_bar_chart.png")
+plt.show()
 
 # plot mean reconstruction errors and standard deviations for each digit in the test set as a table of 10 rows and 2 columns
 fig, ax = plt.subplots()
@@ -83,6 +98,9 @@ for i, ax in enumerate(axes):
     else:
         ax.axis('off')
 
+fig.suptitle(
+    "Plot of Trained Weights for 20 Random Hidden Neurons in Problem 1")
+
 plt.tight_layout()
 plt.savefig("output/problem2/sample_hidden_neuron_weights1.png")
 plt.show()
@@ -103,6 +121,9 @@ for i, ax in enumerate(axes):
     else:
         ax.axis('off')
 
+fig.suptitle(
+    "Plot of Trained Weights for 20 Random Hidden Neurons in Problem 2")
+
 plt.tight_layout()
 plt.savefig("output/problem2/sample_hidden_neuron_weights2.png")
 plt.show()
@@ -117,26 +138,27 @@ with open("output/test_set.txt") as f, open("output/problem2/output_trained_test
     lines = f2.readlines()
 
 # plot 8 random samples from the test set and their reconstructions
-fig, axes = plt.subplots(8, 2, figsize=(8, 16))
+test_set_output = []
+for line in lines:
+    test_set_output.append([float(pixel)
+                           for pixel in line.strip().split("\t")])
+
+fig, axes = plt.subplots(2, 8, figsize=(16, 4))
 axes = axes.flatten()
 
-for i in range(8):
-    index = sample(range(len(test_set)), 1)[0]
-    test_image = np.array(test_set[index])
-    test_image = test_image.reshape((28, 28))
-    test_image = np.rot90(test_image, k=-1)
-    test_image = np.fliplr(test_image)
-    axes[2*i].imshow(test_image, cmap='gray')
-    axes[2*i].axis('off')
+random_indices = sample(range(len(test_set)), 8)
 
-    output_image = np.array([float(pixel)
-                            for pixel in lines[index].strip().split("\t")])
-    output_image = output_image.reshape((28, 28))
-    output_image = np.rot90(output_image, k=-1)
-    output_image = np.fliplr(output_image)
-    axes[2*i+1].imshow(output_image, cmap='gray')
-    axes[2*i+1].axis('off')
+for i, idx in enumerate(random_indices):
+    # Plot original image
+    original_image = np.array(test_set[idx]).reshape((28, 28))
+    axes[i].imshow(original_image, cmap='gray')
+    axes[i].axis('off')
+    # Plot reconstructed image
+    reconstructed_image = np.array(test_set_output[idx]).reshape((28, 28))
+    axes[i + 8].imshow(reconstructed_image, cmap='gray')
+    axes[i + 8].axis('off')
 
+fig.suptitle("Random Samples from Test Set and Their Reconstructions")
 plt.tight_layout()
-plt.savefig("output/problem2/sample_reconstructions.png")
+plt.savefig("output/problem2/random_samples_reconstructions.png")
 plt.show()

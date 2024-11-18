@@ -488,7 +488,7 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
     print("Training complete.")
 
     # write the mean reconstruction errors to a file
-    with open("output/problem2/mean_reconstruction_errors_training.txt", "w") as f:
+    with open("output/problem2/mean_reconstruction_errors_training_set.txt", "w") as f:
         for error in mean_reconstruction_errors:
             f.write(str(error) + "\n")
 
@@ -498,6 +498,26 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
             for n in range(len(layer)):
                 f.write("\t".join([str(weight) for weight in layer[n]]) + "\n")
 
+    # get the output of the trained network on the training set
+    print("Feed forwarding the trained network on the training set...")
+    output_trained_training_set = feed_forward(
+        training_set, weights_trained, layers)
+    # write the output to a file
+    with open("output/problem2/output_trained_training_set.txt", "w") as f:
+        for output in output_trained_training_set:
+            f.write("\t".join([str(point) for point in output]) + "\n")
+    # get the mean reconstruction error of the trained network on the training set
+    reconstruction_errors = 0
+    for i in range(len(training_set)):
+        output = output_trained_training_set[i]
+        label = [float(point) for point in training_set[i].split("\t")]
+        reconstruction_errors += np.sum(
+            np.square(np.subtract(output[-1], label)))/2
+    reconstruction_errors /= len(training_set)
+    # write the reconstruction errors to a file
+    with open("output/problem2/mean_reconstruction_error_training_set.txt", "w") as f:
+        f.write(str(reconstruction_errors) + "\n")
+
     # get the output of the trained network on the test set
     print("Feed forwarding the trained network on the test set...")
     output_trained_test_set = feed_forward(
@@ -506,7 +526,6 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
     with open("output/problem2/output_trained_test_set.txt", "w") as f:
         for output in output_trained_test_set:
             f.write("\t".join([str(point) for point in output]) + "\n")
-
     # get the mean reconstruction error of the trained network on the test set
     reconstruction_errors = 0
     for i in range(len(test_set)):
@@ -516,7 +535,6 @@ def simulate_reconstruction_learning(layers, learning_rate, epochs):
         reconstruction_errors += np.sum(
             np.square(np.subtract(output[-1], [float(point) for point in test_set[i].split("\t")])))/2
     reconstruction_errors /= len(test_set)
-
     # write the reconstruction errors to a file
     with open("output/problem2/mean_reconstruction_error_test_set.txt", "w") as f:
         f.write(str(reconstruction_errors) + "\n")
